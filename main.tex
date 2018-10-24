@@ -318,8 +318,10 @@ Each requested layer of the same content is considered unique request.
     \begin{algorithmic}[1]
     \Procedure{main}{}
         \State $G \gets networkTopology()$
+        \State $G_{(u,v)}^{\Gamma} \gets \emptyset$
+        \State $G_{(u,v)}^T \gets \emptyset$
         \State $\Gamma \gets \emptyset$
-        \State $\tsil{\lcsi{i}}{\lcli{j}} \gets \emptyset \quad \forall i \le N, j \le  L$
+        \State $T \gets \emptyset$
         \State $totalRevenue \gets 0$
         \While{$true$}
             \State $Event \gets waitForEvent()$
@@ -329,7 +331,6 @@ Each requested layer of the same content is considered unique request.
     \EndProcedure
     \end{algorithmic}
 \end{algorithm}
-
 
 \begin{algorithm}
     \caption{dynamicOperation}\label{alg:dynamicOperation}
@@ -348,6 +349,12 @@ Each requested layer of the same content is considered unique request.
             \Case{$Event = nodeFailed$}
                 \State $nodeFailure()$
             \EndCase
+            \Case{$Event = sourceAdded$}
+                \State $addSource()$
+            \EndCase
+            \Case{$Event = sourceRemoved$}
+                \State $removeSource()$
+            \EndCase
         \EndSwitch
     \EndProcedure
     \end{algorithmic}
@@ -355,42 +362,32 @@ Each requested layer of the same content is considered unique request.
 \begin{algorithm}
     \caption{addRequest}\label{alg:addRequest}
     \begin{algorithmic}[1]
-    \Procedure{llvs}{$G$,$\Gamma$}
-        \While{$true$}
-            \If{$topologyChanged() = true$}
-                \State $update()$
-            \EndIf
-            \State $\Gamma \gets readRequestChanges()$
-            \State $HandleRequest()$
-            \State $totalRevenue \gets revenue()$
-            \State $wait(Interval [seconds])$
-        \EndWhile
+    \Procedure{addRequest}{$\gamma$}
+        \State $\tsil{\lcsi{i}}{\lcli{j}}$
     \EndProcedure
 \end{algorithmic}
 \end{algorithm}
+
 \begin{algorithm}
     \caption{linkFailure}\label{alg:linkFailure}
     \begin{algorithmic}[1]
-    \Procedure{linkFailure}{}
-        \If{Edge Failure $(u,v)$}
-            \State $\Gamma' \gets \Gamma_{(u,v)}$
-            \For{$\gamma \in \Gamma'$}
-                \State $\lcsi{k}\gets\gamma.source$ 
-                \State $\lcli{k}\gets\gamma.layer$
-                \State $removeUpperLayers()$
-                \State $\tsil{\lcsi{k}}{\lcli{k}} = \tsil{\lcsi{k}}{\lcli{k}} / (u,v)$
-                \State $\Gamma_{(u,v)} = \Gamma_{(u,v)} / (u,v)$
-            \EndFor
-        \Else{ node $v$ is down}
-        \EndIf
+    \Procedure{linkFailure}{$(u,v)$}
+        % \State $\Gamma' \gets \Gamma_{(u,v)}$
+        \For{$\gamma \in \Gamma_{(u,v)}$}
+            \State $\lcsi{k}\gets\gamma.source$ 
+            \State $\lcli{k}\gets\gamma.layer$
+            \State $removeUpperLayers()$
+            \State $\tsil{\lcsi{k}}{\lcli{k}} = \tsil{\lcsi{k}}{\lcli{k}} / (u,v)$ \Comment{need to find affected clients}
+            \State $\Gamma_{(u,v)} = \Gamma_{(u,v)} / (u,v)$
+        \EndFor
     \EndProcedure
     \end{algorithmic}
 \end{algorithm}
+
 \begin{algorithm}
-    \caption{linkFailure}\label{alg:nodeFailure}
+    \caption{nodeFailure}\label{alg:nodeFailure}
     \begin{algorithmic}[1]
-    \Procedure{nodeFailure}{$G$,$\Gamma$}
-        \State $\forall i \le N, j \le L, \tsil{\lcsi{i}}{\lcli{j}} \gets \emptyset$
+    \Procedure{nodeFailure}{$u$}
     \EndProcedure
     \end{algorithmic}
 \end{algorithm}
@@ -398,8 +395,7 @@ Each requested layer of the same content is considered unique request.
 \begin{algorithm}
     \caption{revenue}\label{alg:revenue}
     \begin{algorithmic}[1]
-    \Procedure{revenue}{$G$,$\Gamma$}
-        \State $\forall i \le N, j \le L, \tsil{\lcsi{i}}{\lcli{j}} \gets \emptyset$
+    \Procedure{revenue}{}
     \EndProcedure
     \end{algorithmic}
 \end{algorithm}
@@ -426,7 +422,6 @@ Each requested layer of the same content is considered unique request.
                 \EndIf
             \EndFor
             \State $\psilj{\lcri{k}}{\lcsi{k}}{\lcli{k}} = shortestPathByLatency(\lcri{k} ,\lcsi{k})$
-            
             \If{$\delay{\psilj{\lcri{k}}{\lcsi{k}}{\lcli{k}}} \ge \gamma_k.maxDelay$} Break; \EndIf
             \If{$\lcli{k} \ge 1$} \Comment{layer is not BASE}
                 \If{$\abs{ \delay{\tsilu{\lcsi{k}}{\lcli{k}-1}{\lcri{k}}} - \delay{\psilj{\lcri{k}}{\lcsi{k}}{\lcli{k}}}} \ge \si{k}.mdd$} 
